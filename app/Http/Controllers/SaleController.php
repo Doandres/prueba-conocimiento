@@ -31,7 +31,27 @@ class SaleController extends Controller
      */
     public function store(Request $request)
     {
-       //
+        $validator = Validator::make($request->all(), [
+            'quantity' => 'required|numeric',
+            'user_id' => 'required|numeric|exists:users,id',
+            'product_id' => 'required|numeric|exists:products,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['validation_errors' => $validator->errors()], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            Sale::create($request->all());
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => false, 'error' => $e->getMessage()], 500);
+        }
+
+        return response()->json(['status' => true], 200);
     }
 
     /**
